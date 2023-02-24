@@ -8,7 +8,8 @@ mqtt_config = MQTTConfig(host=MQTT_HOST,
                          username=MQTT_USERNAME,
                          password=MQTT_PASSWORD)
 mqtt = FastMQTT(config=mqtt_config)
-# print(MQTT_USERNAME, MQTT_PASSWORD)
+
+debug = '[DEBUG]'
 
 app = FastAPI()
 mqtt.init_app(app)
@@ -17,34 +18,34 @@ mqtt.init_app(app)
 @mqtt.on_connect()
 def connect(client, flags, rc, properties):
     mqtt.client.subscribe("/mqtt")  # subscribing mqtt topic
-    print("Connected: ", client, flags, rc, properties)
+    print(debug + "Connected: ", client, flags, rc, properties)
 
 
 @mqtt.on_message()
 async def message(client, topic, payload, qos, properties):
-    print("Received received_message: ", topic, payload.decode(), qos, properties)
+    print(debug + "Received message: ", topic, payload.decode(), qos, properties)
     return 0
 
 
 @mqtt.subscribe("my/mqtt/topic/#")
 async def message_to_topic(client, topic, payload, qos, properties):
-    print("Received received_message to specific topic: ", topic, payload.decode(), qos, properties)
+    print(debug + "Received message to specific topic: ", topic, payload.decode(), qos, properties)
 
 
 @mqtt.on_disconnect()
 def disconnect(client, packet, exc=None):
-    print("Disconnected")
+    print(debug + "Disconnected")
 
 
 @mqtt.on_subscribe()
 def subscribe(client, mid, qos, properties):
-    print("subscribed", client, mid, qos, properties)
+    print(debug + "subscribed", client, mid, qos, properties)
 
 
-@app.get("/test")
-async def func():
-    mqtt.publish("/test", "Hello from Fastapi")  # publishing mqtt topic
-    return {"result": True, "received_message": "Published"}
+@app.get("/publish")
+async def func(topic: str = '/test', message: str = "Hello from Fastapi"):
+    mqtt.publish(topic, message)  # publishing for mqtt topic
+    return {"result": True, "message": "Published"}
 
 
 if __name__ == '__main__':
