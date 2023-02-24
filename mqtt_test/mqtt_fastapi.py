@@ -22,13 +22,13 @@ def connect(client, flags, rc, properties):
 
 @mqtt.on_message()
 async def message(client, topic, payload, qos, properties):
-    print("Received message: ", topic, payload.decode(), qos, properties)
+    print("Received received_message: ", topic, payload.decode(), qos, properties)
     return 0
 
 
 @mqtt.subscribe("my/mqtt/topic/#")
 async def message_to_topic(client, topic, payload, qos, properties):
-    print("Received message to specific topic: ", topic, payload.decode(), qos, properties)
+    print("Received received_message to specific topic: ", topic, payload.decode(), qos, properties)
 
 
 @mqtt.on_disconnect()
@@ -44,7 +44,7 @@ def subscribe(client, mid, qos, properties):
 @app.get("/test")
 async def func():
     mqtt.publish("/test", "Hello from Fastapi")  # publishing mqtt topic
-    return {"result": True, "message": "Published"}
+    return {"result": True, "received_message": "Published"}
 
 
 if __name__ == '__main__':

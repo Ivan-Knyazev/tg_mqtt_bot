@@ -1,17 +1,30 @@
-from paho.mqtt import client as mqtt_client
+from paho.mqtt import client as client_mqtt
 from env import MQTT_PORT, MQTT_HOST, MQTT_PASSWORD, MQTT_USERNAME, MQTT_CLIENT_ID
+import settings as sets
+
+# sets.flag = sets.sets.flag
+# sets.received_message = sets.sets.received_message
 
 
 # Configuration functions of MQTT
-def on_connect(client: mqtt_client, userdata, flags, rc: int):
+def connect_mqtt() -> client_mqtt:
+    client = client_mqtt.Client(client_id=MQTT_CLIENT_ID)
+    client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+    client.connect(host=MQTT_HOST, port=int(MQTT_PORT))
+    return client
+
+
+def on_connect(client: client_mqtt, userdata, flags, rc: int):
     if rc == 0:
-        print("Connected")
+        print("Connected to MQTT Broker")
     else:
         print("Failed to connect, return code %d\n", rc)
     # client.loop_start()
 
 
-def on_disconnect(client: mqtt_client, userdata, rc: int):
+def on_disconnect(client: client_mqtt, userdata, rc: int):
     if rc == 0:
         print("Disconnected")
     else:
@@ -19,24 +32,20 @@ def on_disconnect(client: mqtt_client, userdata, rc: int):
     # client.loop_stop()
 
 
-def on_message(client: mqtt_client, userdata, msg) -> str:
+def on_message(client: client_mqtt, userdata, msg):
     payload = str(msg.payload.decode())
-    print("[topic " + msg.topic + "; qos " + str(msg.qos) + "] payload -> " + payload)
-    return payload
+    info = "[topic " + msg.topic + "; qos " + str(msg.qos) + "] payload -> " + payload
+    print("[DEBUG] " + info)
 
-
-def connect_mqtt() -> mqtt_client:
-    client = mqtt_client.Client(MQTT_CLIENT_ID)
-    client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
-    client.on_connect = on_connect
-    client.on_disconnect = on_disconnect
-    client.connect(MQTT_HOST, int(MQTT_PORT))
-    return client
+    # global sets.received_message, sets.flag
+    sets.received_message['topic'] = msg.topic
+    sets.received_message['payload'] = payload
+    sets.flag = True
 
 
 # MQTT Publish function
-def publish(client: mqtt_client, topic: str, msg: str, qos: int = 0):
-    result = client.publish(topic, msg, qos=qos)
+def mqtt_publish(client: client_mqtt, topic: str, msg: str, qos: int = 0):
+    result = client.publish(topic=topic, payload=msg, qos=qos)
     result.wait_for_publish()
     status = result[0]
     if status == 0:
@@ -46,38 +55,11 @@ def publish(client: mqtt_client, topic: str, msg: str, qos: int = 0):
 
 
 # MQTT Subscribe function
-def subscribe(client: mqtt_client, topic: str):
-    client.subscribe(topic)
+def mqtt_subscribe(client: client_mqtt, topic: str, qos: int = 2):
+    client.subscribe(topic=topic, qos=qos)
     client.on_message = on_message
 
 
 # MQTT Unsubscribe function
-def unsubscribe(client: mqtt_client, topic: str):
-    client.unsubscribe(topic)
-
-
-# MQTT PUB SUB UNSUB functions
-def mqtt_pub(topic: str, msg: str):
-    client = connect_mqtt()
-    # client.loop_start()
-    publish(client=client, topic=topic, msg=msg)
-    # client.loop_stop()
-
-
-def mqtt_sub(topic: str):
-    client = connect_mqtt()
-    subscribe(client=client, topic=topic)
-    # client.loop_forever()
-    client.loop_start()
-
-
-# ???
-def mqtt_unsub(topic: str):
-    client = connect_mqtt()
-    unsubscribe(client=client, topic=topic)
-    # client.loop_forever()
-    client.loop_stop()
-
-
-# if __name__ == '__main__':
-#     mqtt_pub('/test', 'hello from paho client)')
+def mqtt_unsubscribe(client: client_mqtt, topic: str):
+    client.unsubscribe(topic=topic)
