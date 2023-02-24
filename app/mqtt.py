@@ -1,9 +1,6 @@
 from paho.mqtt import client as client_mqtt
-from env import MQTT_PORT, MQTT_HOST, MQTT_PASSWORD, MQTT_USERNAME, MQTT_CLIENT_ID
-import settings as sets
-
-# sets.flag = sets.sets.flag
-# sets.received_message = sets.sets.received_message
+from app.env import MQTT_PORT, MQTT_HOST, MQTT_PASSWORD, MQTT_USERNAME, MQTT_CLIENT_ID
+import app.settings as sets
 
 
 # Configuration functions of MQTT
@@ -37,7 +34,6 @@ def on_message(client: client_mqtt, userdata, msg):
     info = "[topic " + msg.topic + "; qos " + str(msg.qos) + "] payload -> " + payload
     print("[DEBUG] " + info)
 
-    # global sets.received_message, sets.flag
     sets.received_message['topic'] = msg.topic
     sets.received_message['payload'] = payload
     sets.flag = True
