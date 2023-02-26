@@ -24,8 +24,8 @@ services:
         limits:
           cpus: '1'
           memory: 2G
-#    networks:
-#      - base_network
+    networks:
+      - base_network
 
   pgadmin:
     container_name: nto-pgadmin
@@ -45,9 +45,9 @@ services:
         limits:
           cpus: '1'
           memory: 1G
-#    networks:
-#      - base_network
+    networks:
+      - base_network
 
-#networks:
-#  base_network:
-#    name: postgres
+networks:
+  base_network:
+    name: postgres
