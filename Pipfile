@@ -7,6 +7,10 @@ name = "pypi"
 aiogram = "*"
 python-dotenv = "*"
 paho-mqtt = "*"
+sqlalchemy = "*"
+alembic = "*"
+asyncpg = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
