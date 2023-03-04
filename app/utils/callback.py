@@ -4,8 +4,7 @@ import app.settings as sets
 
 async def check():
     print('Start Check task')
-    # if not sets.flag:
-    #     await asyncio.sleep(5)
+    # await asyncio.sleep(15)
     while True:
         if sets.flag:
             topic = sets.received_message['topic']
@@ -23,4 +22,4 @@ async def check():
             print('[DEBUG] ' + 'sets.dependencies: ', sets.dependencies)
             sets.flag = False
         else:
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
