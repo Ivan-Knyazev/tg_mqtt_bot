@@ -24,5 +24,7 @@ async def get_user_by_id(
         session: AsyncSession,
         user_id: int
 ):
-    user = await session.get(User, user_id)
+    # user = await session.get(User, user_id)
+    # user = await session.query(User).filter_by(telegram_id=user_id).first()
+    user = await session.execute(select(User).where(User.telegram_id == user_id))
     return user

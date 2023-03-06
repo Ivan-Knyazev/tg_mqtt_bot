@@ -5,6 +5,7 @@ from aiogram import executor
 import app.settings as sets
 from app.utils.callback import check
 from app.handlers import about, mqtt, others
+from app.utils.base_operations import sub_all_topics
 
 # TELEGRAM BOT
 nto_dp = sets.nto_dp
@@ -17,6 +18,7 @@ others.register_handlers_others(nto_dp)
 async def on_startup(_):
     # print('Bot is running')
     asyncio.create_task(check())
+    await sub_all_topics()
 
 
 if __name__ == '__main__':

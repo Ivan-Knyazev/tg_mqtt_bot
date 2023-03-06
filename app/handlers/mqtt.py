@@ -1,6 +1,9 @@
 from aiogram import types, Dispatcher
 import app.settings as sets
 from app.mqtt import mqtt_publish, mqtt_subscribe, mqtt_unsubscribe
+from app.models.base import async_session
+from app.utils.base_operations import get_users_by_topic
+from app.services import topics
 
 
 # @nto_dp.message_handler(commands=['pub'])
@@ -29,7 +32,6 @@ async def publish(message: types.Message):
 
 # @nto_dp.message_handler(commands=['sub'])
 async def subscribe(message: types.Message):
-    # await mqtt.publish("/test", "Hello from Fastapi")
     data = message.text.split()
     if len(data) < 2:
         await message.reply('❌ не указан topic')
@@ -37,21 +39,29 @@ async def subscribe(message: types.Message):
         user_id = message.from_user.id
         topic = data[1]
         success = "✅ ok\n" + "📨 подписка оформлена"
-        debug_message = '[DEBUG] ' + 'new subscriber: ' + str(user_id)
+        debug_message = '[DEBUG] ' + 'new subscriber ' + str(user_id) + ' for topic ' + topic
 
-        if topic in sets.dependencies:
-            users = sets.dependencies[topic]
-            if user_id not in users:
-                users += [user_id]
-                print(debug_message)
-                await message.reply(success)
-            else:
-                await message.reply('❌ вы уже подписаны на данный topic')
-        else:
-            sets.dependencies[topic] = [user_id]
-            mqtt_subscribe(client=sets.mqtt_client, topic=topic)
-            print(debug_message)
-            await message.reply(success)
+        users_from_topic = await get_users_by_topic(topic)
+
+        async with async_session() as session:
+            async with session.begin():
+                if user_id not in users_from_topic:
+
+                    if len(users_from_topic) == 0:
+                        mqtt_subscribe(client=sets.mqtt_client, topic=topic)
+                        print(f'[DEBUG] New MQTT Subscribe to {topic} from {user_id}')
+
+                    topics.create_topic(session, topic, user_id)
+                    try:
+                        await session.commit()
+                        print(debug_message)
+                        await message.reply(success)
+                    except:
+                        await session.rollback()
+                        print(f'[ERROR] Topic `{topic}` for user `{user_id}` has not been added to the database!')
+                        await message.reply('❌ ERROR ... fixing ...')
+                else:
+                    await message.reply('❌ вы уже подписаны на данный topic')
 
 
 # @nto_dp.message_handler(commands=['unsub'])
@@ -60,25 +70,38 @@ async def unsubscribe(message: types.Message):
     if len(data) < 2:
         await message.reply('❌ не указан topic')
     else:
-        # global user_id
         user_id = message.from_user.id
         topic = data[1]
-        error = '❌ вы не подписаны на данный topic'
+        error = '❌ ERROR ... fixing ...'
+        status = False
 
-        if topic in sets.dependencies:
-            users = sets.dependencies[topic]
-            if user_id in users:
-                users.remove(user_id)
-                print('[DEBUG] ' + 'unsubscribe: ' + str(user_id))
-                await message.reply("✅ ok\n"
-                                    "📤 подписка отменена")
-            else:
-                await message.reply(error)
-            if len(users) == 0:
-                mqtt_unsubscribe(client=sets.mqtt_client, topic=topic)
-                sets.dependencies.pop(topic)
-        else:
-            await message.reply(error)
+        async with async_session() as session:
+            async with session.begin():
+                result = await topics.check_topic(session, user_id, topic)
+                if result['status_code'] == 0:
+                    print('[ERROR] 2 entries in the database for one topic and a user!')
+                    await message.reply(error)
+                elif result['status_code'] == 1:
+                    await message.reply('❌ вы не подписаны на данный topic')
+                else:
+                    status = True
+        if status:
+            async with async_session() as session:
+                async with session.begin():
+                    await topics.delete_topic(session, user_id, topic)
+                    try:
+                        await session.commit()
+                        print('[DEBUG] ' + 'unsubscribe ' + str(user_id) + ' from topic ' + topic)
+                        await message.reply("✅ ok\n"
+                                            "📤 подписка отменена")
+                    except:
+                        await session.rollback()
+                        print(f'[ERROR] Topic `{topic}` for user `{user_id}` has not been deleted from the database!')
+                        await message.reply(error)
+
+        users_from_topic = await get_users_by_topic(topic)
+        if len(users_from_topic) == 0:
+            mqtt_unsubscribe(client=sets.mqtt_client, topic=topic)
 
 
 def register_handlers_mqtt(dp: Dispatcher):
