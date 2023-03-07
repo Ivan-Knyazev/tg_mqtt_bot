@@ -10,19 +10,25 @@ from app.services import topics
 async def publish(message: types.Message):
     # await mqtt.publish("/test", "Hello from Fastapi")
     data = message.text.split()
+    qos_error = '❌ qos может быть только 0, 1 или 2'
+
     if len(data) < 3:
         await message.reply('❌ не указан topic или payload')
     else:
         topic = data[1]
         success = '✅ ok\n' + '💾 опубликовано'
         if 'qos=' in data[2]:
-            qos = int(data[2][4])
-            msg = ' '.join(data[3:])
-            if qos > 2:
-                await message.reply('❌ qos может быть только 0, 1 или 2')
+            qos_str = data[2][4]
+            if qos_str.isdigit():
+                qos = int(qos_str)
+                msg = ' '.join(data[3:])
+                if qos > 2:
+                    await message.reply(qos_error)
+                else:
+                    mqtt_publish(client=sets.mqtt_client, topic=topic, msg=msg, qos=qos)
+                    await message.reply(success)
             else:
-                mqtt_publish(client=sets.mqtt_client, topic=topic, msg=msg, qos=qos)
-                await message.reply(success)
+                await message.reply(qos_error)
         else:
             qos = 0
             msg = ' '.join(data[2:])
