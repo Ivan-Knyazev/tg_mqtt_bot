@@ -1,5 +1,9 @@
 # Telegram MQTT Bot
 
+## Usage example
+![img.png](usage_example.png)
+
+
 ## Env
 
 Put env vars to `.env`
