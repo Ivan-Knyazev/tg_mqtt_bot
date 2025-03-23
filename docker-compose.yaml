@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  bot:
+    container_name: mqtt_bot
+    image: nto-mqtt-bot
+    env_file:
+      - .env
+    restart: on-failure # unless-stopped

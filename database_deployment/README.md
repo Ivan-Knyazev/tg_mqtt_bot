@@ -5,14 +5,25 @@ Put env vars to `.env`.
 
 Example in `.env.example`.
 
+### Make commands works only in Linux
+
 ## Run
-`make run`
+```bash
+make run
+```
 
 ## Stop
-`make stop`
+```bash
+make stop
+```
 
 ## Stop and Remove containers
-`make down`
+```bash
+make down
+```
 
 ## Clean
-`make clean` - to clean volumes (requires sudo)
+to clean volumes (requires sudo)
+```bash
+make clean
+```
